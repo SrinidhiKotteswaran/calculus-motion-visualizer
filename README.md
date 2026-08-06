@@ -24,6 +24,16 @@ Many students memorize derivative rules without developing intuition for what de
 - Plotly
 - NumPy
 
+## How It Works
+
+Motion Explorer demonstrates the relationship between position, velocity, and derivatives.
+
+1. A position function describes an object's location over time.
+2. The tangent line shows the slope at a specific moment.
+3. The slope represents instantaneous velocity.
+
+By interacting with the graph, students can visually explore how calculus describes motion.
+
 ## Educational Goal
 
 This project aims to bridge the gap between abstract calculus concepts and physical intuition by showing how derivatives describe real-world motion.
