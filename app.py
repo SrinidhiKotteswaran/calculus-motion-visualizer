@@ -2,89 +2,57 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
-# ---------------------------------------------------------
-# PAGE CONFIG
-# ---------------------------------------------------------
-
 st.set_page_config(
     page_title="Motion Explorer",
-    page_icon="📐",
     layout="wide"
 )
 
 # ---------------------------------------------------------
-# CUSTOM STYLING
+# PAGE STYLE
 # ---------------------------------------------------------
 
 st.markdown("""
 <style>
     .block-container {
+        max-width: 1150px;
         padding-top: 2.5rem;
         padding-bottom: 3rem;
-        max-width: 1200px;
     }
 
-    .main-title {
-        font-size: 2.7rem;
-        font-weight: 700;
-        margin-bottom: 0.2rem;
+    h1 {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    h2 {
+        font-size: 1.45rem !important;
+        margin-top: 2rem !important;
+        margin-bottom: 0.7rem !important;
+    }
+
+    h3 {
+        font-size: 1.15rem !important;
     }
 
     .subtitle {
-        font-size: 1.1rem;
-        color: #6b7280;
-        margin-bottom: 2rem;
-    }
-
-    .section-title {
-        font-size: 1.45rem;
-        font-weight: 650;
-        margin-top: 1.8rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .equation-box {
-        background: #f7f7f8;
-        border-radius: 10px;
-        padding: 1rem 1.25rem;
-        margin: 0.7rem 0 1rem 0;
-        font-size: 1.15rem;
-    }
-
-    .metric-card {
-        background: #f7f7f8;
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-        border: 1px solid #e5e7eb;
-    }
-
-    .metric-label {
-        font-size: 0.85rem;
-        color: #6b7280;
-        margin-bottom: 0.25rem;
-    }
-
-    .metric-value {
-        font-size: 1.5rem;
-        font-weight: 650;
+        color: #666;
+        font-size: 1.05rem;
+        margin-bottom: 1.8rem;
     }
 
     .explanation {
-        background: #fafafa;
-        border-left: 4px solid #555;
-        padding: 1rem 1.25rem;
-        border-radius: 4px;
-        margin: 1rem 0;
+        border-left: 3px solid #888;
+        padding-left: 1rem;
+        margin: 1rem 0 1.5rem 0;
     }
 
     .footer {
-        text-align: center;
-        color: #888;
-        font-size: 0.85rem;
         margin-top: 3rem;
         padding-top: 1.5rem;
-        border-top: 1px solid #eee;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        color: #777;
+        font-size: 0.85rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -94,21 +62,18 @@ st.markdown("""
 # HEADER
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="main-title">📐 Motion Explorer</div>',
-    unsafe_allow_html=True
-)
+st.title("Motion Explorer")
 
 st.markdown(
     '<div class="subtitle">'
-    'An interactive visualization connecting calculus derivatives to physical motion.'
-    '</div>',
+    "An interactive visualization connecting calculus derivatives to physical motion."
+    "</div>",
     unsafe_allow_html=True
 )
 
 st.write(
     "Explore how the derivative of a position function represents "
-    "instantaneous velocity — and see that relationship directly on a graph."
+    "instantaneous velocity and see that relationship directly on a graph."
 )
 
 
@@ -116,19 +81,13 @@ st.write(
 # POSITION FUNCTION
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">1. Position Function</div>',
-    unsafe_allow_html=True
-)
+st.header("1. Position Function")
 
-st.markdown(
-    '<div class="equation-box">$$s(t) = -t^2 + 8t$$</div>',
-    unsafe_allow_html=True
-)
+st.latex(r"s(t) = -t^2 + 8t")
 
 st.write(
-    "The position function describes where the object is located at each "
-    "moment in time."
+    "The position function describes where the object is located at "
+    "each moment in time."
 )
 
 
@@ -136,10 +95,7 @@ st.write(
 # TIME SLIDER
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">2. Choose a Moment in Time</div>',
-    unsafe_allow_html=True
-)
+st.header("2. Choose a Moment in Time")
 
 time = st.slider(
     "Time (seconds)",
@@ -154,114 +110,72 @@ time = st.slider(
 # CALCULATIONS
 # ---------------------------------------------------------
 
-# Position:
-# s(t) = -t² + 8t
-
 position = -(time ** 2) + 8 * time
 
-# Velocity:
-# v(t) = s'(t) = -2t + 8
-
 velocity = -2 * time + 8
-
-# Acceleration:
-# a(t) = v'(t) = -2
 
 acceleration = -2
 
 
-# Determine motion state
-
 if velocity > 0.05:
-    motion = "Moving forward →"
+    motion = "Moving forward"
 elif velocity < -0.05:
-    motion = "Moving backward ←"
+    motion = "Moving backward"
 else:
     motion = "Stopped"
 
 
 # ---------------------------------------------------------
-# MOTION SUMMARY
+# CURRENT MOTION
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">3. Instantaneous Motion</div>',
-    unsafe_allow_html=True
-)
+st.header("3. Instantaneous Motion")
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(
-        "Position",
-        f"{position:.2f} m"
-    )
+    st.metric("Position", f"{position:.2f} m")
 
 with col2:
-    st.metric(
-        "Velocity",
-        f"{velocity:.2f} m/s"
-    )
+    st.metric("Velocity", f"{velocity:.2f} m/s")
 
 with col3:
-    st.metric(
-        "Acceleration",
-        f"{acceleration:.2f} m/s²"
-    )
+    st.metric("Acceleration", f"{acceleration:.2f} m/s²")
 
 with col4:
-    st.metric(
-        "Motion",
-        motion
-    )
+    st.metric("Motion", motion)
 
 
 # ---------------------------------------------------------
 # GRAPH
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">4. Position and Tangent Line</div>',
-    unsafe_allow_html=True
-)
-
-# Time values for graph
+st.header("4. Position and Tangent Line")
 
 t = np.linspace(0, 8, 400)
 
-# Position function
+position_curve = -(t ** 2) + 8 * t
 
-s = -(t ** 2) + 8 * t
-
-# Tangent line:
-#
-# y = v(t0)(t - t0) + s(t0)
-
-tangent = velocity * (t - time) + position
-
+tangent_line = (
+    velocity * (t - time) + position
+)
 
 fig = go.Figure()
-
-
-# Position curve
 
 fig.add_trace(
     go.Scatter(
         x=t,
-        y=s,
+        y=position_curve,
         mode="lines",
         name="Position s(t)",
         line=dict(width=3)
     )
 )
 
-
-# Tangent line
-
 fig.add_trace(
     go.Scatter(
         x=t,
-        y=tangent,
+        y=tangent_line,
         mode="lines",
         name="Tangent line",
         line=dict(
@@ -271,59 +185,46 @@ fig.add_trace(
     )
 )
 
-
-# Current position
-
 fig.add_trace(
     go.Scatter(
         x=[time],
         y=[position],
         mode="markers",
         name="Current position",
-        marker=dict(
-            size=12
-        )
+        marker=dict(size=11)
     )
 )
 
-
-# Zero line
+fig.add_vline(
+    x=time,
+    line_dash="dot",
+    line_width=1
+)
 
 fig.add_hline(
     y=0,
     line_width=1
 )
 
-
-# Vertical line at selected time
-
-fig.add_vline(
-    x=time,
-    line_width=1,
-    line_dash="dot"
-)
-
-
 fig.update_layout(
     height=520,
     margin=dict(
         l=20,
         r=20,
-        t=30,
+        t=25,
         b=20
     ),
     xaxis_title="Time (seconds)",
     yaxis_title="Position (meters)",
+    hovermode="x unified",
     legend=dict(
         orientation="h",
         yanchor="bottom",
         y=1.02,
         xanchor="left",
         x=0
-    ),
-    hovermode="x unified"
+    )
 )
-
 
 st.plotly_chart(
     fig,
@@ -332,13 +233,10 @@ st.plotly_chart(
 
 
 # ---------------------------------------------------------
-# TANGENT LINE EXPLANATION
+# TANGENT LINE
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">5. What Does the Tangent Line Mean?</div>',
-    unsafe_allow_html=True
-)
+st.header("5. What Does the Tangent Line Mean?")
 
 st.write(
     f"At **t = {time:.1f} seconds**, the object is at "
@@ -352,10 +250,10 @@ st.write(
 
 st.markdown(
     '<div class="explanation">'
-    'The slope of the tangent line represents the object\'s '
-    '<strong>instantaneous velocity</strong>. '
-    'In calculus, this slope is the derivative of the position function.'
-    '</div>',
+    "The slope of the tangent line represents the object's "
+    "<strong>instantaneous velocity</strong>. "
+    "In calculus, this slope is the derivative of the position function."
+    "</div>",
     unsafe_allow_html=True
 )
 
@@ -364,28 +262,18 @@ st.markdown(
 # VELOCITY
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">6. Velocity as the Derivative</div>',
-    unsafe_allow_html=True
-)
+st.header("6. Velocity as the Derivative")
 
-st.markdown(
-    '<div class="equation-box">'
-    '$$v(t) = s\'(t) = -2t + 8$$'
-    '</div>',
-    unsafe_allow_html=True
-)
+st.latex(r"v(t) = s'(t) = -2t + 8")
 
 st.write(
     "Velocity tells us how quickly the object's position is changing."
 )
 
-st.write(
-    f"At the selected time:"
-)
+st.write("At the selected time:")
 
 st.latex(
-    f"v({time:.1f}) = {-2 * time + 8:.2f}\\;\\text{{m/s}}"
+    rf"v({time:.1f}) = {velocity:.2f}\ \mathrm{{m/s}}"
 )
 
 
@@ -393,17 +281,9 @@ st.latex(
 # ACCELERATION
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">7. Acceleration</div>',
-    unsafe_allow_html=True
-)
+st.header("7. Acceleration")
 
-st.markdown(
-    '<div class="equation-box">'
-    '$$a(t) = v\'(t) = s\'\'(t) = -2$$'
-    '</div>',
-    unsafe_allow_html=True
-)
+st.latex(r"a(t) = v'(t) = s''(t) = -2")
 
 st.write(
     "Acceleration describes how quickly velocity changes."
@@ -419,30 +299,27 @@ st.write(
 # CALCULUS CONNECTION
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">8. The Calculus Connection</div>',
-    unsafe_allow_html=True
-)
+st.header("8. The Calculus Connection")
 
 st.write(
-    "Motion Explorer demonstrates the relationship between three "
-    "fundamental quantities:"
+    "Motion Explorer demonstrates the relationship between "
+    "position, velocity, and acceleration."
 )
 
-connection_col1, connection_col2, connection_col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-with connection_col1:
-    st.markdown("### 📍 Position")
+with col1:
+    st.subheader("Position")
     st.latex(r"s(t) = -t^2 + 8t")
     st.write("Describes where the object is.")
 
-with connection_col2:
-    st.markdown("### ➡️ Velocity")
+with col2:
+    st.subheader("Velocity")
     st.latex(r"v(t) = s'(t)")
     st.write("Describes how quickly position is changing.")
 
-with connection_col3:
-    st.markdown("### ⚡ Acceleration")
+with col3:
+    st.subheader("Acceleration")
     st.latex(r"a(t) = v'(t) = s''(t)")
     st.write("Describes how quickly velocity is changing.")
 
@@ -451,38 +328,22 @@ with connection_col3:
 # TURNING POINT
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">9. Find the Turning Point</div>',
-    unsafe_allow_html=True
-)
-
-turning_time = 4.0
-turning_position = 16.0
-turning_velocity = 0.0
+st.header("9. Find the Turning Point")
 
 st.write(
     "The object reaches its maximum position when its velocity becomes zero."
 )
 
-turn_col1, turn_col2, turn_col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-with turn_col1:
-    st.metric(
-        "Time",
-        "4.00 s"
-    )
+with col1:
+    st.metric("Time", "4.00 s")
 
-with turn_col2:
-    st.metric(
-        "Position",
-        "16.00 m"
-    )
+with col2:
+    st.metric("Position", "16.00 m")
 
-with turn_col3:
-    st.metric(
-        "Velocity",
-        "0.00 m/s"
-    )
+with col3:
+    st.metric("Velocity", "0.00 m/s")
 
 st.write(
     "At this point, the object stops moving forward and begins moving backward."
@@ -490,48 +351,40 @@ st.write(
 
 
 # ---------------------------------------------------------
-# INTERPRET THE CURRENT MOTION
+# INTERPRET THE MOTION
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">10. Interpret the Motion</div>',
-    unsafe_allow_html=True
-)
+st.header("10. Interpret the Motion")
 
 if velocity > 0:
-    interpretation = (
-        f"At **t = {time:.1f} s**, velocity is positive, so the object's "
-        "position is increasing. It is moving forward."
+    st.write(
+        f"At **t = {time:.1f} s**, velocity is positive, so the "
+        "object's position is increasing. It is moving forward."
     )
 
 elif velocity < 0:
-    interpretation = (
-        f"At **t = {time:.1f} s**, velocity is negative, so the object's "
-        "position is decreasing. It is moving backward."
+    st.write(
+        f"At **t = {time:.1f} s**, velocity is negative, so the "
+        "object's position is decreasing. It is moving backward."
     )
 
 else:
-    interpretation = (
+    st.write(
         f"At **t = {time:.1f} s**, velocity is zero. "
         "The object is momentarily stopped."
     )
-
-st.info(interpretation)
 
 
 # ---------------------------------------------------------
 # HOW IT WORKS
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">🧠 How It Works</div>',
-    unsafe_allow_html=True
-)
+st.header("How It Works")
 
 with st.expander("Step 1 — Define the position"):
     st.write(
-        "The program begins with a position function describing the "
-        "object's location over time."
+        "The program begins with a position function describing "
+        "the object's location over time."
     )
     st.latex(r"s(t) = -t^2 + 8t")
 
@@ -543,19 +396,18 @@ with st.expander("Step 2 — Differentiate"):
 
 with st.expander("Step 3 — Choose a time"):
     st.write(
-        "The slider selects a specific moment. The application evaluates "
-        "the position and velocity at that exact time."
+        "The slider selects a specific moment. The application "
+        "evaluates the position and velocity at that time."
     )
 
 with st.expander("Step 4 — Build the tangent line"):
     st.write(
-        "The tangent line is constructed using the instantaneous velocity "
-        "as its slope."
+        "The tangent line is constructed using the instantaneous "
+        "velocity as its slope."
     )
     st.latex(
         r"y = v(t_0)(t-t_0)+s(t_0)"
     )
-
     st.write(
         "This makes the geometric meaning of the derivative visible: "
         "the derivative is the slope of the tangent line."
@@ -566,19 +418,16 @@ with st.expander("Step 4 — Build the tangent line"):
 # WHY I BUILT THIS
 # ---------------------------------------------------------
 
-st.markdown(
-    '<div class="section-title">🎯 Why I Built This</div>',
-    unsafe_allow_html=True
+st.header("Why I Built This")
+
+st.write(
+    "Many students can calculate derivatives without developing "
+    "an intuition for what a derivative actually represents."
 )
 
 st.write(
-    "Many students can calculate derivatives without developing an "
-    "intuition for what a derivative actually represents."
-)
-
-st.write(
-    "I built Motion Explorer to connect the algebraic derivative to "
-    "physical motion by showing position, tangent slope, velocity, "
+    "I built Motion Explorer to connect the algebraic derivative "
+    "to physical motion by showing position, tangent slope, velocity, "
     "and acceleration together in an interactive visualization."
 )
 
@@ -589,7 +438,7 @@ st.write(
 
 st.markdown(
     '<div class="footer">'
-    'Motion Explorer · Built with Python, Streamlit, NumPy, and Plotly'
-    '</div>',
+    "Motion Explorer · Built with Python, Streamlit, NumPy, and Plotly"
+    "</div>",
     unsafe_allow_html=True
 )
