@@ -6,123 +6,118 @@ import streamlit as st
 import sympy as sp
 
 from sympy.parsing.sympy_parser import (
+    convert_xor,
+    implicit_multiplication_application,
     parse_expr,
     standard_transformations,
-    implicit_multiplication_application,
-    convert_xor,
 )
 
 
-# =========================================================
+# ============================================================
 # PAGE CONFIG
-# =========================================================
+# ============================================================
 
 st.set_page_config(
     page_title="Motion Explorer",
-    page_icon=None,
+    page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 
-# =========================================================
-# CLEAN, MINIMAL STYLING
-# =========================================================
+# ============================================================
+# STYLING
+# ============================================================
 
 st.markdown(
     """
     <style>
+        .block-container {
+            max-width: 1120px;
+            padding-top: 3rem;
+            padding-bottom: 4rem;
+        }
 
-    /* Main page */
-    .block-container {
-        max-width: 1100px;
-        padding-top: 3rem;
-        padding-bottom: 4rem;
-    }
+        .motion-title {
+            font-size: 2.65rem;
+            font-weight: 700;
+            letter-spacing: -0.035em;
+            margin-bottom: 0.2rem;
+        }
 
-    /* Remove excessive vertical gaps */
-    div[data-testid="stVerticalBlock"] {
-        gap: 0.65rem;
-    }
+        .motion-subtitle {
+            color: #6b7280;
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+        }
 
-    /* Main title */
-    .motion-title {
-        font-size: 2.6rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        margin-bottom: 0.25rem;
-    }
+        .section-heading {
+            font-size: 1.35rem;
+            font-weight: 650;
+            margin-top: 2.2rem;
+            margin-bottom: 0.55rem;
+        }
 
-    .motion-subtitle {
-        font-size: 1.05rem;
-        color: #6b7280;
-        margin-bottom: 1.6rem;
-    }
+        .explanation {
+            margin: 0.8rem 0 1rem 0;
+            padding-left: 0.9rem;
+            border-left: 3px solid #9ca3af;
+        }
 
-    /* Section headings */
-    .section-heading {
-        font-size: 1.35rem;
-        font-weight: 650;
-        margin-top: 2.1rem;
-        margin-bottom: 0.55rem;
-    }
+        /* Prevent Streamlit metrics from clipping text */
+        div[data-testid="stMetric"] {
+            min-width: 0;
+        }
 
-    /* Simple equation styling.
-       IMPORTANT: no background, border, or box. */
-    .equation {
-        margin: 0.4rem 0 0.8rem 0;
-    }
+        div[data-testid="stMetricLabel"] {
+            white-space: normal !important;
+            overflow: visible !important;
+        }
 
-    /* Explanation text */
-    .explanation {
-        margin: 0.8rem 0 1rem 0;
-        padding-left: 0.9rem;
-        border-left: 3px solid #9ca3af;
-    }
+        div[data-testid="stMetricValue"] {
+            white-space: normal !important;
+            overflow: visible !important;
+            font-size: 1.45rem !important;
+        }
 
-    /* Small helper text */
-    .helper {
-        color: #6b7280;
-        font-size: 0.9rem;
-    }
+        div[data-testid="metric-container"] {
+            background: transparent;
+            border: none;
+            padding: 0.25rem 0;
+        }
 
-    /* Footer */
-    .footer {
-        margin-top: 3.5rem;
-        padding-top: 1.2rem;
-        border-top: 1px solid #e5e7eb;
-        text-align: center;
-        color: #9ca3af;
-        font-size: 0.82rem;
-    }
-
-    /* Remove unnecessary borders/backgrounds from metric areas */
-    div[data-testid="metric-container"] {
-        background: transparent;
-        border: none;
-        padding: 0;
-    }
-
-    /* Make metric labels subtle */
-    div[data-testid="stMetricLabel"] {
-        color: #6b7280;
-    }
-
-    /* Keep widgets visually clean */
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="input"] > div {
-        border-radius: 6px;
-    }
-
+        .footer {
+            margin-top: 3.5rem;
+            padding-top: 1.2rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.82rem;
+        }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-# =========================================================
+# ============================================================
+# GRAPH COLORS
+# These colors are deliberately explicit so Plotly does not
+# fall back to colors that become hard to see with the theme.
+# ============================================================
+
+POSITION_COLOR = "#3B82F6"
+TANGENT_COLOR = "#EF4444"
+VELOCITY_COLOR = "#10B981"
+ACCELERATION_COLOR = "#A855F7"
+SELECTED_COLOR = "#F59E0B"
+ZERO_COLOR = "#9CA3AF"
+GRID_COLOR = "rgba(156, 163, 175, 0.25)"
+
+
+# ============================================================
 # SYMBOLIC CALCULUS SETUP
-# =========================================================
+# ============================================================
 
 t = sp.Symbol("t", real=True)
 
@@ -160,9 +155,9 @@ ALLOWED_LOCALS = {
 }
 
 
-# =========================================================
-# EXAMPLES
-# =========================================================
+# ============================================================
+# EXAMPLE FUNCTIONS
+# ============================================================
 
 PRESETS = {
     "Quadratic": "-t^2 + 8t",
@@ -178,24 +173,32 @@ PRESETS = {
 }
 
 
-# =========================================================
-# PARSE FUNCTION
-# =========================================================
+# ============================================================
+# FUNCTION PARSING
+# ============================================================
 
 def parse_function(expression):
+    """
+    Convert the user's text into a SymPy expression.
+
+    Only the supported mathematical functions above are allowed.
+    """
 
     expression = expression.strip()
 
     if not expression:
-        raise ValueError("Please enter a position function.")
-
-    if len(expression) > 120:
         raise ValueError(
-            "Please keep the function under 120 characters."
+            "Please enter a position function."
         )
 
+    if len(expression) > 150:
+        raise ValueError(
+            "Please keep the function under 150 characters."
+        )
+
+    # Restrict the input language.
     if not re.fullmatch(
-        r"[0-9a-zA-Z_+\-*/^().,\s]+",
+        r"[0-9A-Za-z_+\-*/^().,\s]+",
         expression,
     ):
         raise ValueError(
@@ -207,21 +210,26 @@ def parse_function(expression):
         expression,
     )
 
-    allowed_names = set(ALLOWED_LOCALS.keys())
+    allowed_names = set(
+        ALLOWED_LOCALS.keys()
+    )
 
-    unknown_names = [
-        name
-        for name in names
-        if name not in allowed_names
-    ]
+    unknown_names = sorted(
+        {
+            name
+            for name in names
+            if name not in allowed_names
+        }
+    )
 
     if unknown_names:
         raise ValueError(
             "Unsupported name(s): "
-            + ", ".join(sorted(set(unknown_names)))
+            + ", ".join(unknown_names)
         )
 
     try:
+
         parsed = parse_expr(
             expression,
             local_dict=ALLOWED_LOCALS,
@@ -234,7 +242,7 @@ def parse_function(expression):
         raise ValueError(
             "I couldn't interpret that function. "
             "Try something like sin(t), e^t, ln(t), "
-            "or t^3 - 3t."
+            "t^3 - 3t, or e^(-t)*sin(t)."
         ) from exc
 
     if t not in parsed.free_symbols:
@@ -242,15 +250,14 @@ def parse_function(expression):
             "The position function must depend on t."
         )
 
-    return sp.simplify(parsed)
+    return sp.sympify(parsed)
 
 
-# =========================================================
-# NUMERICAL EVALUATION
-# =========================================================
+# ============================================================
+# NUMERICAL HELPERS
+# ============================================================
 
 def numerical_function(expr):
-
     return sp.lambdify(
         t,
         expr,
@@ -259,8 +266,15 @@ def numerical_function(expr):
 
 
 def evaluate_array(expr, values):
+    """
+    Evaluate a symbolic expression across an array.
 
-    function = numerical_function(expr)
+    Invalid values such as ln(-1) or 1/0 become NaN,
+    allowing Plotly to leave gaps instead of drawing
+    incorrect lines through discontinuities.
+    """
+
+    fn = numerical_function(expr)
 
     values = np.asarray(
         values,
@@ -274,7 +288,7 @@ def evaluate_array(expr, values):
         under="ignore",
     ):
 
-        result = function(values)
+        result = fn(values)
 
     result = np.asarray(result)
 
@@ -286,9 +300,10 @@ def evaluate_array(expr, values):
 
         if np.iscomplexobj(result):
 
-            result = np.full(
+            return np.full(
                 values.shape,
                 np.nan,
+                dtype=float,
             )
 
     try:
@@ -297,17 +312,26 @@ def evaluate_array(expr, values):
 
     except (TypeError, ValueError):
 
-        result = np.full(
+        return np.full(
             values.shape,
             np.nan,
+            dtype=float,
         )
 
-    result[~np.isfinite(result)] = np.nan
+    result = np.where(
+        np.isfinite(result),
+        result,
+        np.nan,
+    )
 
     return result
 
 
 def evaluate_at(expr, value):
+    """
+    Evaluate an expression at a single time.
+    Returns None when the value is not a finite real number.
+    """
 
     try:
 
@@ -333,9 +357,83 @@ def evaluate_at(expr, value):
         return None
 
 
-# =========================================================
+def input_function_latex(expression):
+    """
+    Preserve the mathematical form the student entered,
+    while letting SymPy convert it to readable LaTeX.
+    """
+
+    try:
+
+        parsed = parse_function(
+            expression
+        )
+
+        return sp.latex(parsed)
+
+    except Exception:
+
+        return expression
+
+
+# ============================================================
+# GRAPH LAYOUT
+# ============================================================
+
+def apply_graph_layout(
+    figure,
+    height,
+    x_title,
+    y_title,
+):
+    """
+    Shared graph styling.
+    """
+
+    figure.update_layout(
+
+        height=height,
+
+        margin=dict(
+            l=20,
+            r=20,
+            t=35,
+            b=25,
+        ),
+
+        hovermode="closest",
+
+        plot_bgcolor="rgba(0,0,0,0)",
+
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.01,
+            xanchor="left",
+            x=0,
+        ),
+
+        xaxis=dict(
+            title=x_title,
+            showgrid=True,
+            gridcolor=GRID_COLOR,
+            zeroline=False,
+        ),
+
+        yaxis=dict(
+            title=y_title,
+            showgrid=True,
+            gridcolor=GRID_COLOR,
+            zeroline=False,
+        ),
+    )
+
+
+# ============================================================
 # HEADER
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="motion-title">Motion Explorer</div>',
@@ -357,9 +455,9 @@ st.write(
 )
 
 
-# =========================================================
+# ============================================================
 # 1. POSITION FUNCTION
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">1. Position Function</div>',
@@ -375,23 +473,26 @@ with function_col1:
     preset = st.selectbox(
         "Choose an example",
         list(PRESETS.keys()),
+        key="preset_function",
     )
+
 
 with function_col2:
 
     custom_function = st.text_input(
         "Or enter your own position function",
         value=PRESETS[preset],
+        key="position_input",
         help=(
             "Examples: sin(t), cos(t), e^t, ln(t), "
-            "t^3 - 3t, or e^(-t)*sin(t)"
+            "t^3 - 3t, or e^(-t)*sin(t)."
         ),
     )
 
 
-# =========================================================
-# PARSE
-# =========================================================
+# ============================================================
+# PARSE AND DIFFERENTIATE
+# ============================================================
 
 try:
 
@@ -419,12 +520,10 @@ except ValueError as error:
     st.stop()
 
 
-# =========================================================
-# DISPLAY POSITION FUNCTION
-# =========================================================
+# Display the student's entered position function.
 
 st.latex(
-    rf"s(t) = {sp.latex(position_function)}"
+    rf"s(t) = {input_function_latex(custom_function)}"
 )
 
 st.write(
@@ -433,16 +532,19 @@ st.write(
 )
 
 
-# =========================================================
+# ============================================================
 # 2. TIME RANGE
-# =========================================================
+# ============================================================
 
 st.markdown(
-    '<div class="section-heading">2. Choose a Moment in Time</div>',
+    '<div class="section-heading">'
+    "2. Choose a Moment in Time"
+    "</div>",
     unsafe_allow_html=True,
 )
 
 range_col1, range_col2 = st.columns(2)
+
 
 with range_col1:
 
@@ -450,7 +552,10 @@ with range_col1:
         "Start time",
         value=0.0,
         step=0.5,
+        format="%.2f",
+        key="start_time",
     )
+
 
 with range_col2:
 
@@ -458,6 +563,8 @@ with range_col2:
         "End time",
         value=8.0,
         step=0.5,
+        format="%.2f",
+        key="end_time",
     )
 
 
@@ -470,50 +577,60 @@ if end_time <= start_time:
     st.stop()
 
 
-# =========================================================
-# SESSION STATE
-# =========================================================
+# ============================================================
+# TIME SLIDER STATE
+# ============================================================
 
 if "selected_time" not in st.session_state:
 
     st.session_state.selected_time = (
         start_time
-        + 0.25 * (end_time - start_time)
+        + 0.25 * (
+            end_time - start_time
+        )
     )
 
 
-# Keep selected time inside current interval.
+# Keep time inside the current range.
 
 st.session_state.selected_time = min(
     max(
-        float(st.session_state.selected_time),
+        float(
+            st.session_state.selected_time
+        ),
         float(start_time),
     ),
     float(end_time),
 )
 
 
-# =========================================================
-# TIME SLIDER
-# =========================================================
-
 time = st.slider(
     "Time (seconds)",
-    min_value=float(start_time),
-    max_value=float(end_time),
+
+    min_value=float(
+        start_time
+    ),
+
+    max_value=float(
+        end_time
+    ),
+
     value=float(
         st.session_state.selected_time
     ),
+
     step=0.1,
+
     key="time_slider",
 )
+
 
 st.session_state.selected_time = time
 
 
-# =========================================================
-# CALCULATE CURRENT VALUES
-# =========================================================
+# ============================================================
+# CURRENT VALUES
+# ============================================================
 
 position = evaluate_at(
     position_function,
@@ -538,19 +655,20 @@ if (
 ):
 
     st.warning(
-        f"The selected time t = {time:.2f} "
-        "is outside the real-valued domain of "
-        "this function or one of its derivatives."
+        f"The selected time t = {time:.2f} is outside "
+        "the real-valued domain of this function or "
+        "one of its derivatives. Choose another time."
     )
 
     st.stop()
 
 
-# =========================================================
-# MOTION STATE
-# =========================================================
+# ============================================================
+# MOTION INTERPRETATION
+# ============================================================
 
 tolerance = 0.05
+
 
 if velocity > tolerance:
 
@@ -565,9 +683,9 @@ else:
     motion = "Momentarily stopped"
 
 
-# =========================================================
+# ============================================================
 # 3. INSTANTANEOUS MOTION
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -576,7 +694,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-metric1, metric2, metric3, metric4 = st.columns(4)
+metric1, metric2, metric3 = st.columns(3)
+
 
 with metric1:
 
@@ -585,12 +704,14 @@ with metric1:
         f"{position:.2f} m",
     )
 
+
 with metric2:
 
     st.metric(
         "Velocity",
         f"{velocity:.2f} m/s",
     )
+
 
 with metric3:
 
@@ -599,33 +720,34 @@ with metric3:
         f"{acceleration:.2f} m/s²",
     )
 
-with metric4:
 
-    st.metric(
-        "Motion",
-        motion,
-    )
+st.write(
+    f"**Motion:** {motion}"
+)
 
 
-# =========================================================
+# ============================================================
 # GRAPH DATA
-# =========================================================
+# ============================================================
 
 graph_t = np.linspace(
-    start_time,
-    end_time,
-    600,
+    float(start_time),
+    float(end_time),
+    700,
 )
+
 
 position_values = evaluate_array(
     position_function,
     graph_t,
 )
 
+
 velocity_values = evaluate_array(
     velocity_function,
     graph_t,
 )
+
 
 acceleration_values = evaluate_array(
     acceleration_function,
@@ -633,19 +755,21 @@ acceleration_values = evaluate_array(
 )
 
 
-# =========================================================
-# TANGENT LINE
-# =========================================================
+# Tangent line:
+#
+# y = s(t₀) + s'(t₀)(t - t₀)
 
 tangent_values = (
-    velocity * (graph_t - time)
-    + position
+    position
+    + velocity * (
+        graph_t - time
+    )
 )
 
 
-# =========================================================
-# 4. POSITION GRAPH
-# =========================================================
+# ============================================================
+# 4. POSITION + TANGENT LINE
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -655,153 +779,208 @@ st.markdown(
 )
 
 st.caption(
-    "Drag the slider, or click a point on the position curve "
-    "to examine that moment."
+    "Move the slider, or click a point on the position "
+    "curve to examine that moment."
 )
 
 
 position_fig = go.Figure()
 
 
-# Main curve
+# ------------------------------------------------------------
+# Position curve
+# ------------------------------------------------------------
 
 position_fig.add_trace(
     go.Scatter(
         x=graph_t,
+
         y=position_values,
+
         mode="lines+markers",
+
         name="Position",
+
         line=dict(
-            width=3,
+            color=POSITION_COLOR,
+            width=3.5,
         ),
+
+        # Tiny transparent markers make the curve clickable
+        # without visually cluttering it.
         marker=dict(
-            size=4,
-            opacity=0.0,
+            size=7,
+            color=POSITION_COLOR,
+            opacity=0.01,
         ),
+
         customdata=graph_t,
+
         hovertemplate=(
             "t = %{x:.2f}<br>"
-            "s(t) = %{y:.2f}<extra></extra>"
+            "s(t) = %{y:.2f} m"
+            "<extra></extra>"
         ),
     )
 )
 
 
-# Tangent
+# ------------------------------------------------------------
+# Tangent line
+# ------------------------------------------------------------
 
 position_fig.add_trace(
     go.Scatter(
         x=graph_t,
+
         y=tangent_values,
+
         mode="lines",
+
         name="Tangent line",
+
         line=dict(
-            width=2,
+            color=TANGENT_COLOR,
+            width=2.5,
             dash="dash",
         ),
-        hoverinfo="skip",
+
+        hovertemplate=(
+            "Tangent line<br>"
+            "t = %{x:.2f}<br>"
+            "y = %{y:.2f}"
+            "<extra></extra>"
+        ),
     )
 )
 
 
-# Current point
+# ------------------------------------------------------------
+# Selected point
+# ------------------------------------------------------------
 
 position_fig.add_trace(
     go.Scatter(
         x=[time],
+
         y=[position],
+
         mode="markers",
+
         name="Selected time",
+
         marker=dict(
-            size=12,
+            size=13,
+            color=SELECTED_COLOR,
+            line=dict(
+                color="white",
+                width=2,
+            ),
         ),
+
         hovertemplate=(
+            "Selected time<br>"
             "t = %{x:.2f}<br>"
-            "s(t) = %{y:.2f}<extra></extra>"
+            "s(t) = %{y:.2f} m"
+            "<extra></extra>"
         ),
     )
 )
 
 
+# ------------------------------------------------------------
+# Reference lines
+# ------------------------------------------------------------
+
 position_fig.add_hline(
     y=0,
     line_width=1,
+    line_color=ZERO_COLOR,
 )
+
 
 position_fig.add_vline(
     x=time,
-    line_width=1,
+    line_width=1.5,
     line_dash="dot",
+    line_color=SELECTED_COLOR,
 )
 
 
-position_fig.update_layout(
-    height=520,
-    margin=dict(
-        l=15,
-        r=15,
-        t=30,
-        b=20,
-    ),
-    xaxis_title="Time",
-    yaxis_title="Position",
-    hovermode="closest",
-    showlegend=True,
+apply_graph_layout(
+    position_fig,
+    520,
+    "Time (s)",
+    "Position (m)",
 )
 
 
 position_event = st.plotly_chart(
     position_fig,
+
     width="stretch",
+
     key="position_graph",
+
     on_select="rerun",
+
     selection_mode="points",
+
     config={
         "displaylogo": False,
         "scrollZoom": False,
+        "responsive": True,
     },
 )
 
 
-# =========================================================
-# PROCESS GRAPH SELECTION
-# =========================================================
+# ============================================================
+# HANDLE GRAPH CLICK
+# ============================================================
 
 try:
 
     selected_points = (
-        position_event.selection.points
+        position_event
+        .selection
+        .points
     )
 
     if selected_points:
 
-        selected_x = selected_points[-1]["x"]
+        selected_x = float(
+            selected_points[-1]["x"]
+        )
 
-        selected_x = float(selected_x)
+        selected_x = min(
+            max(
+                selected_x,
+                float(start_time),
+            ),
+            float(end_time),
+        )
 
-        if (
-            start_time
-            <= selected_x
-            <= end_time
-        ):
+        if abs(
+            selected_x
+            - st.session_state.selected_time
+        ) > 0.001:
 
-            if abs(
-                selected_x - st.session_state.selected_time
-            ) > 0.001:
+            st.session_state.selected_time = (
+                selected_x
+            )
 
-                st.session_state.selected_time = (
-                    selected_x
-                )
-
-                st.rerun()
+            st.rerun()
 
 except Exception:
+
+    # The graph still works normally if the installed
+    # Streamlit version does not expose selection data.
     pass
 
 
-# =========================================================
-# 5. TANGENT EXPLANATION
-# =========================================================
+# ============================================================
+# 5. TANGENT LINE MEANING
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -824,16 +1003,16 @@ st.markdown(
     '<div class="explanation">'
     "The slope of the tangent line represents the "
     "<strong>instantaneous velocity</strong>. "
-    "In calculus, this slope is the derivative of the "
-    "position function."
+    "In calculus, this slope is the derivative of "
+    "the position function."
     "</div>",
     unsafe_allow_html=True,
 )
 
 
-# =========================================================
-# 6. VELOCITY AS DERIVATIVE
-# =========================================================
+# ============================================================
+# 6. VELOCITY AS THE DERIVATIVE
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -843,7 +1022,8 @@ st.markdown(
 )
 
 st.latex(
-    rf"v(t) = s'(t) = {sp.latex(velocity_function)}"
+    rf"v(t) = s'(t) = "
+    rf"{sp.latex(velocity_function)}"
 )
 
 st.write(
@@ -852,13 +1032,14 @@ st.write(
 )
 
 st.latex(
-    rf"v({time:.2f}) = {velocity:.2f}\ \mathrm{{m/s}}"
+    rf"v({time:.2f}) = "
+    rf"{velocity:.2f}\ \mathrm{{m/s}}"
 )
 
 
-# =========================================================
+# ============================================================
 # 7. VELOCITY GRAPH
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">7. Velocity</div>',
@@ -867,79 +1048,105 @@ st.markdown(
 
 velocity_fig = go.Figure()
 
+
 velocity_fig.add_trace(
     go.Scatter(
         x=graph_t,
+
         y=velocity_values,
+
         mode="lines",
+
         name="Velocity",
+
         line=dict(
-            width=3,
+            color=VELOCITY_COLOR,
+            width=3.5,
         ),
+
         hovertemplate=(
             "t = %{x:.2f}<br>"
-            "v(t) = %{y:.2f}<extra></extra>"
+            "v(t) = %{y:.2f} m/s"
+            "<extra></extra>"
         ),
     )
 )
+
 
 velocity_fig.add_trace(
     go.Scatter(
         x=[time],
+
         y=[velocity],
+
         mode="markers",
+
         name="Selected time",
+
         marker=dict(
-            size=11,
+            size=12,
+            color=SELECTED_COLOR,
+            line=dict(
+                color="white",
+                width=2,
+            ),
         ),
+
         hovertemplate=(
             "t = %{x:.2f}<br>"
-            "v(t) = %{y:.2f}<extra></extra>"
+            "v(t) = %{y:.2f} m/s"
+            "<extra></extra>"
         ),
     )
 )
 
+
 velocity_fig.add_hline(
     y=0,
     line_width=1,
+    line_color=ZERO_COLOR,
 )
+
 
 velocity_fig.add_vline(
     x=time,
-    line_width=1,
+    line_width=1.5,
     line_dash="dot",
+    line_color=SELECTED_COLOR,
 )
 
-velocity_fig.update_layout(
-    height=380,
-    margin=dict(
-        l=15,
-        r=15,
-        t=25,
-        b=20,
-    ),
-    xaxis_title="Time",
-    yaxis_title="Velocity",
-    hovermode="closest",
+
+apply_graph_layout(
+    velocity_fig,
+    390,
+    "Time (s)",
+    "Velocity (m/s)",
 )
+
 
 st.plotly_chart(
     velocity_fig,
+
     width="stretch",
+
     key="velocity_graph",
+
     config={
         "displaylogo": False,
         "scrollZoom": False,
+        "responsive": True,
     },
 )
 
 
-# =========================================================
+# ============================================================
 # 8. ACCELERATION
-# =========================================================
+# ============================================================
 
 st.markdown(
-    '<div class="section-heading">8. Acceleration</div>',
+    '<div class="section-heading">'
+    "8. Acceleration"
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -958,83 +1165,113 @@ st.latex(
 )
 
 
-# =========================================================
+# ============================================================
 # 9. ACCELERATION GRAPH
-# =========================================================
+# ============================================================
 
 st.markdown(
-    '<div class="section-heading">9. Acceleration</div>',
+    '<div class="section-heading">'
+    "9. Acceleration"
+    "</div>",
     unsafe_allow_html=True,
 )
 
 acceleration_fig = go.Figure()
 
+
 acceleration_fig.add_trace(
     go.Scatter(
         x=graph_t,
+
         y=acceleration_values,
+
         mode="lines",
+
         name="Acceleration",
+
         line=dict(
-            width=3,
+            color=ACCELERATION_COLOR,
+            width=3.5,
         ),
+
         hovertemplate=(
             "t = %{x:.2f}<br>"
-            "a(t) = %{y:.2f}<extra></extra>"
+            "a(t) = %{y:.2f} m/s²"
+            "<extra></extra>"
         ),
     )
 )
+
 
 acceleration_fig.add_trace(
     go.Scatter(
         x=[time],
+
         y=[acceleration],
+
         mode="markers",
+
         name="Selected time",
+
         marker=dict(
-            size=11,
+            size=12,
+            color=SELECTED_COLOR,
+            line=dict(
+                color="white",
+                width=2,
+            ),
+        ),
+
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "a(t) = %{y:.2f} m/s²"
+            "<extra></extra>"
         ),
     )
 )
 
+
 acceleration_fig.add_hline(
     y=0,
     line_width=1,
+    line_color=ZERO_COLOR,
 )
+
 
 acceleration_fig.add_vline(
     x=time,
-    line_width=1,
+    line_width=1.5,
     line_dash="dot",
+    line_color=SELECTED_COLOR,
 )
 
-acceleration_fig.update_layout(
-    height=380,
-    margin=dict(
-        l=15,
-        r=15,
-        t=25,
-        b=20,
-    ),
-    xaxis_title="Time",
-    yaxis_title="Acceleration",
-    hovermode="closest",
+
+apply_graph_layout(
+    acceleration_fig,
+    390,
+    "Time (s)",
+    "Acceleration (m/s²)",
 )
+
 
 st.plotly_chart(
     acceleration_fig,
+
     width="stretch",
+
     key="acceleration_graph",
+
     config={
         "displaylogo": False,
         "scrollZoom": False,
+        "responsive": True,
     },
 )
 
 
-# =========================================================
+# ============================================================
 # 10. CALCULUS CONNECTION
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -1048,7 +1285,9 @@ st.write(
     "position, velocity, and acceleration."
 )
 
+
 connection1, connection2, connection3 = st.columns(3)
+
 
 with connection1:
 
@@ -1062,24 +1301,28 @@ with connection1:
         "Describes where the object is."
     )
 
+
 with connection2:
 
     st.markdown("**Velocity**")
 
     st.latex(
-        rf"v(t) = s'(t)"
+        rf"v(t) = s'(t) = "
+        rf"{sp.latex(velocity_function)}"
     )
 
     st.write(
         "Describes how quickly position is changing."
     )
 
+
 with connection3:
 
     st.markdown("**Acceleration**")
 
     st.latex(
-        rf"a(t) = v'(t) = s''(t)"
+        rf"a(t) = v'(t) = s''(t) = "
+        rf"{sp.latex(acceleration_function)}"
     )
 
     st.write(
@@ -1087,9 +1330,9 @@ with connection3:
     )
 
 
-# =========================================================
+# ============================================================
 # 11. TURNING POINTS
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -1111,24 +1354,36 @@ st.latex(
 
 try:
 
-    critical_points = sp.solve(
+    solved_points = sp.solveset(
         sp.Eq(
             velocity_function,
             0,
         ),
         t,
+        domain=sp.S.Reals,
     )
 
-    valid_points = []
+    critical_values = []
 
-    for point in critical_points:
+    if isinstance(
+        solved_points,
+        sp.FiniteSet,
+    ):
 
-        if point.is_real is False:
-            continue
+        for point in solved_points:
 
-        try:
+            if point.is_real is False:
+                continue
 
-            point_time = float(point)
+            try:
+
+                point_time = float(
+                    point
+                )
+
+            except Exception:
+
+                continue
 
             if not (
                 start_time
@@ -1144,25 +1399,26 @@ try:
 
             if point_position is not None:
 
-                valid_points.append(
+                critical_values.append(
                     (
                         point_time,
                         point_position,
                     )
                 )
 
-        except Exception:
-            continue
+    critical_values.sort(
+        key=lambda item: item[0]
+    )
 
-    if valid_points:
+    if critical_values:
 
         for (
             point_time,
             point_position,
-        ) in valid_points:
+        ) in critical_values:
 
             st.write(
-                f"A critical point occurs at "
+                f"A critical point occurs at approximately "
                 f"**t = {point_time:.2f} seconds**."
             )
 
@@ -1204,9 +1460,9 @@ except Exception:
     )
 
 
-# =========================================================
+# ============================================================
 # 12. INTERPRET THE MOTION
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -1215,9 +1471,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 if velocity > tolerance:
 
-    interpretation = (
+    st.write(
         f"At **t = {time:.2f} s**, velocity is positive, "
         "so the object's position is increasing. "
         "It is moving forward."
@@ -1225,7 +1482,7 @@ if velocity > tolerance:
 
 elif velocity < -tolerance:
 
-    interpretation = (
+    st.write(
         f"At **t = {time:.2f} s**, velocity is negative, "
         "so the object's position is decreasing. "
         "It is moving backward."
@@ -1233,19 +1490,15 @@ elif velocity < -tolerance:
 
 else:
 
-    interpretation = (
+    st.write(
         f"At **t = {time:.2f} s**, velocity is approximately "
         "zero. The object is momentarily stopped."
     )
 
-st.write(
-    interpretation
-)
 
-
-# =========================================================
+# ============================================================
 # HOW IT WORKS
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -1253,6 +1506,7 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
 
 with st.expander(
     "Step 1 — Define the position"
@@ -1303,8 +1557,8 @@ with st.expander(
 
     st.write(
         "The slider selects a specific moment. "
-        "You can also select a point directly on the "
-        "position graph."
+        "You can also select a point directly "
+        "on the position graph."
     )
 
 
@@ -1318,7 +1572,7 @@ with st.expander(
     )
 
     st.latex(
-        r"y=v(t_0)(t-t_0)+s(t_0)"
+        r"y=s(t_0)+s'(t_0)(t-t_0)"
     )
 
     st.write(
@@ -1328,9 +1582,9 @@ with st.expander(
     )
 
 
-# =========================================================
+# ============================================================
 # WHY I BUILT THIS
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="section-heading">'
@@ -1353,14 +1607,13 @@ st.write(
 )
 
 
-# =========================================================
+# ============================================================
 # FOOTER
-# =========================================================
+# ============================================================
 
 st.markdown(
     '<div class="footer">'
-    "Motion Explorer · Built with Python, Streamlit, "
-    "NumPy, Plotly, and SymPy"
+    "Motion Explorer · Built with Python, Streamlit, NumPy, Plotly, and SymPy"
     "</div>",
     unsafe_allow_html=True,
 )
