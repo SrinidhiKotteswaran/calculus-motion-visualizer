@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 import sympy as sp
+
 from sympy.parsing.sympy_parser import (
     parse_expr,
     standard_transformations,
@@ -18,72 +19,101 @@ from sympy.parsing.sympy_parser import (
 
 st.set_page_config(
     page_title="Motion Explorer",
-    page_icon="📐",
+    page_icon=None,
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 
 # =========================================================
-# CUSTOM STYLING
+# CLEAN, MINIMAL STYLING
 # =========================================================
 
 st.markdown(
     """
     <style>
-        .block-container {
-            max-width: 1180px;
-            padding-top: 2.5rem;
-            padding-bottom: 3.5rem;
-        }
 
-        .main-title {
-            font-size: 2.7rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
+    /* Main page */
+    .block-container {
+        max-width: 1100px;
+        padding-top: 3rem;
+        padding-bottom: 4rem;
+    }
 
-        .subtitle {
-            font-size: 1.08rem;
-            color: #6b7280;
-            margin-bottom: 0.7rem;
-        }
+    /* Remove excessive vertical gaps */
+    div[data-testid="stVerticalBlock"] {
+        gap: 0.65rem;
+    }
 
-        .section-title {
-            font-size: 1.35rem;
-            font-weight: 650;
-            margin-top: 2rem;
-            margin-bottom: 0.55rem;
-        }
+    /* Main title */
+    .motion-title {
+        font-size: 2.6rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.25rem;
+    }
 
-        .equation-box {
-            background: #f7f7f8;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 0.85rem 1.15rem;
-            margin: 0.6rem 0 1rem 0;
-        }
+    .motion-subtitle {
+        font-size: 1.05rem;
+        color: #6b7280;
+        margin-bottom: 1.6rem;
+    }
 
-        .explanation {
-            background: #fafafa;
-            border-left: 4px solid #555;
-            padding: 0.9rem 1.15rem;
-            border-radius: 4px;
-            margin: 0.8rem 0;
-        }
+    /* Section headings */
+    .section-heading {
+        font-size: 1.35rem;
+        font-weight: 650;
+        margin-top: 2.1rem;
+        margin-bottom: 0.55rem;
+    }
 
-        .footer {
-            text-align: center;
-            color: #888;
-            font-size: 0.82rem;
-            margin-top: 3rem;
-            padding-top: 1.3rem;
-            border-top: 1px solid #eeeeee;
-        }
+    /* Simple equation styling.
+       IMPORTANT: no background, border, or box. */
+    .equation {
+        margin: 0.4rem 0 0.8rem 0;
+    }
 
-        .small-note {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
+    /* Explanation text */
+    .explanation {
+        margin: 0.8rem 0 1rem 0;
+        padding-left: 0.9rem;
+        border-left: 3px solid #9ca3af;
+    }
+
+    /* Small helper text */
+    .helper {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    /* Footer */
+    .footer {
+        margin-top: 3.5rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid #e5e7eb;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 0.82rem;
+    }
+
+    /* Remove unnecessary borders/backgrounds from metric areas */
+    div[data-testid="metric-container"] {
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+
+    /* Make metric labels subtle */
+    div[data-testid="stMetricLabel"] {
+        color: #6b7280;
+    }
+
+    /* Keep widgets visually clean */
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div {
+        border-radius: 6px;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -103,31 +133,42 @@ TRANSFORMATIONS = standard_transformations + (
 
 ALLOWED_LOCALS = {
     "t": t,
+
     "pi": sp.pi,
     "e": sp.E,
     "E": sp.E,
+
     "sin": sp.sin,
     "cos": sp.cos,
     "tan": sp.tan,
+
     "asin": sp.asin,
     "acos": sp.acos,
     "atan": sp.atan,
+
     "sinh": sp.sinh,
     "cosh": sp.cosh,
     "tanh": sp.tanh,
+
     "exp": sp.exp,
+
     "ln": sp.log,
     "log": sp.log,
+
     "sqrt": sp.sqrt,
     "abs": sp.Abs,
 }
 
 
+# =========================================================
+# EXAMPLES
+# =========================================================
+
 PRESETS = {
     "Quadratic": "-t^2 + 8t",
     "Cubic": "t^3 - 3t",
-    "Sine": "sin(t)",
-    "Cosine": "cos(t)",
+    "Sine": "2sin(t)",
+    "Cosine": "2cos(t)",
     "Exponential": "e^t",
     "Exponential Decay": "e^(-t)",
     "Logarithmic": "ln(t)",
@@ -138,41 +179,39 @@ PRESETS = {
 
 
 # =========================================================
-# FUNCTION PARSER
+# PARSE FUNCTION
 # =========================================================
 
 def parse_function(expression):
-    """
-    Parse a user-entered mathematical expression using a
-    restricted set of allowed mathematical characters/functions.
-    """
 
     expression = expression.strip()
 
     if not expression:
-        raise ValueError("Please enter a function.")
+        raise ValueError("Please enter a position function.")
 
-    # Basic input-length protection.
     if len(expression) > 120:
-        raise ValueError("Please keep the function under 120 characters.")
+        raise ValueError(
+            "Please keep the function under 120 characters."
+        )
 
-    # Only allow mathematical characters, names, punctuation,
-    # operators, decimal points, and spaces.
     if not re.fullmatch(
         r"[0-9a-zA-Z_+\-*/^().,\s]+",
         expression,
     ):
         raise ValueError(
-            "This function contains an unsupported character."
+            "The function contains an unsupported character."
         )
 
-    # Only allow known function/name tokens.
-    names = re.findall(r"[A-Za-z_][A-Za-z_0-9]*", expression)
+    names = re.findall(
+        r"[A-Za-z_][A-Za-z_0-9]*",
+        expression,
+    )
 
     allowed_names = set(ALLOWED_LOCALS.keys())
 
     unknown_names = [
-        name for name in names
+        name
+        for name in names
         if name not in allowed_names
     ]
 
@@ -180,7 +219,6 @@ def parse_function(expression):
         raise ValueError(
             "Unsupported name(s): "
             + ", ".join(sorted(set(unknown_names)))
-            + "."
         )
 
     try:
@@ -190,30 +228,28 @@ def parse_function(expression):
             transformations=TRANSFORMATIONS,
             evaluate=True,
         )
+
     except Exception as exc:
+
         raise ValueError(
-            "I couldn't interpret that expression. "
-            "Try something like sin(t), e^t, ln(t), or t^3 - 2t."
+            "I couldn't interpret that function. "
+            "Try something like sin(t), e^t, ln(t), "
+            "or t^3 - 3t."
         ) from exc
 
-    # Make sure the expression actually depends on t.
     if t not in parsed.free_symbols:
         raise ValueError(
             "The position function must depend on t."
         )
 
-    # Make sure it is real-valued where possible.
     return sp.simplify(parsed)
 
 
 # =========================================================
-# NUMERICAL HELPERS
+# NUMERICAL EVALUATION
 # =========================================================
 
-def safe_numeric_function(expr):
-    """
-    Convert a SymPy expression into a NumPy function.
-    """
+def numerical_function(expr):
 
     return sp.lambdify(
         t,
@@ -222,13 +258,14 @@ def safe_numeric_function(expr):
     )
 
 
-def evaluate_expression(expr, values):
-    """
-    Evaluate an expression and convert invalid/non-real values
-    into NaN so Plotly can safely skip them.
-    """
+def evaluate_array(expr, values):
 
-    func = safe_numeric_function(expr)
+    function = numerical_function(expr)
+
+    values = np.asarray(
+        values,
+        dtype=float,
+    )
 
     with np.errstate(
         divide="ignore",
@@ -236,18 +273,32 @@ def evaluate_expression(expr, values):
         over="ignore",
         under="ignore",
     ):
-        result = func(values)
+
+        result = function(values)
 
     result = np.asarray(result)
 
     if np.iscomplexobj(result):
-        result = np.real_if_close(result)
+
+        result = np.real_if_close(
+            result
+        )
+
+        if np.iscomplexobj(result):
+
+            result = np.full(
+                values.shape,
+                np.nan,
+            )
 
     try:
+
         result = result.astype(float)
+
     except (TypeError, ValueError):
-        return np.full_like(
-            np.asarray(values, dtype=float),
+
+        result = np.full(
+            values.shape,
             np.nan,
         )
 
@@ -257,12 +308,15 @@ def evaluate_expression(expr, values):
 
 
 def evaluate_at(expr, value):
-    """
-    Safely evaluate one expression at one time.
-    """
 
     try:
-        result = sp.N(expr.subs(t, value))
+
+        result = sp.N(
+            expr.subs(
+                t,
+                value,
+            )
+        )
 
         if result.is_real is False:
             return None
@@ -275,6 +329,7 @@ def evaluate_at(expr, value):
         return result
 
     except Exception:
+
         return None
 
 
@@ -283,12 +338,12 @@ def evaluate_at(expr, value):
 # =========================================================
 
 st.markdown(
-    '<div class="main-title">Motion Explorer</div>',
+    '<div class="motion-title">Motion Explorer</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown(
-    '<div class="subtitle">'
+    '<div class="motion-subtitle">'
     "An interactive visualization connecting calculus derivatives "
     "to physical motion."
     "</div>",
@@ -297,28 +352,33 @@ st.markdown(
 
 st.write(
     "Explore how the derivative of a position function represents "
-    "instantaneous velocity — and see that relationship directly on a graph."
+    "instantaneous velocity — and see that relationship directly "
+    "on a graph."
 )
 
 
 # =========================================================
-# POSITION FUNCTION
+# 1. POSITION FUNCTION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">1. Position Function</div>',
+    '<div class="section-heading">1. Position Function</div>',
     unsafe_allow_html=True,
 )
 
-function_col1, function_col2 = st.columns([1, 2])
+function_col1, function_col2 = st.columns(
+    [1, 2]
+)
 
 with function_col1:
+
     preset = st.selectbox(
         "Choose an example",
         list(PRESETS.keys()),
     )
 
 with function_col2:
+
     custom_function = st.text_input(
         "Or enter your own position function",
         value=PRESETS[preset],
@@ -330,68 +390,62 @@ with function_col2:
 
 
 # =========================================================
-# PARSE FUNCTION
+# PARSE
 # =========================================================
 
 try:
-    position_function = parse_function(custom_function)
+
+    position_function = parse_function(
+        custom_function
+    )
 
     velocity_function = sp.simplify(
-        sp.diff(position_function, t)
+        sp.diff(
+            position_function,
+            t,
+        )
     )
 
     acceleration_function = sp.simplify(
-        sp.diff(velocity_function, t)
+        sp.diff(
+            velocity_function,
+            t,
+        )
     )
 
-    function_error = None
-
 except ValueError as error:
-    function_error = str(error)
 
-
-if function_error:
-
-    st.error(function_error)
+    st.error(str(error))
     st.stop()
 
 
 # =========================================================
-# DISPLAY SYMBOLIC EQUATIONS
+# DISPLAY POSITION FUNCTION
 # =========================================================
-
-st.markdown(
-    '<div class="equation-box">',
-    unsafe_allow_html=True,
-)
 
 st.latex(
     rf"s(t) = {sp.latex(position_function)}"
 )
 
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True,
-)
-
 st.write(
-    "The position function describes where the object is located "
-    "at each moment in time."
+    "The position function describes where the object "
+    "is located at each moment in time."
 )
 
 
 # =========================================================
-# TIME RANGE
+# 2. TIME RANGE
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">2. Choose a Moment in Time</div>',
+    '<div class="section-heading">2. Choose a Moment in Time</div>',
     unsafe_allow_html=True,
 )
 
 range_col1, range_col2 = st.columns(2)
 
 with range_col1:
+
     start_time = st.number_input(
         "Start time",
         value=0.0,
@@ -399,34 +453,66 @@ with range_col1:
     )
 
 with range_col2:
+
     end_time = st.number_input(
         "End time",
         value=8.0,
         step=0.5,
     )
 
+
 if end_time <= start_time:
-    st.error("End time must be greater than start time.")
+
+    st.error(
+        "End time must be greater than start time."
+    )
+
     st.stop()
+
+
+# =========================================================
+# SESSION STATE
+# =========================================================
+
+if "selected_time" not in st.session_state:
+
+    st.session_state.selected_time = (
+        start_time
+        + 0.25 * (end_time - start_time)
+    )
+
+
+# Keep selected time inside current interval.
+
+st.session_state.selected_time = min(
+    max(
+        float(st.session_state.selected_time),
+        float(start_time),
+    ),
+    float(end_time),
+)
 
 
 # =========================================================
 # TIME SLIDER
 # =========================================================
 
-default_time = start_time + (end_time - start_time) * 0.25
-
 time = st.slider(
     "Time (seconds)",
     min_value=float(start_time),
     max_value=float(end_time),
-    value=float(default_time),
+    value=float(
+        st.session_state.selected_time
+    ),
     step=0.1,
+    key="time_slider",
 )
+
+st.session_state.selected_time = time
 
 
 # =========================================================
-# CALCULATE VALUES
+# CALCULATE CURRENT VALUES
 # =========================================================
 
 position = evaluate_at(
@@ -445,65 +531,76 @@ acceleration = evaluate_at(
 )
 
 
-# =========================================================
-# HANDLE UNDEFINED POINT
-# =========================================================
-
-if position is None or velocity is None or acceleration is None:
+if (
+    position is None
+    or velocity is None
+    or acceleration is None
+):
 
     st.warning(
-        f"The selected time t = {time:.2f} is outside the real-valued "
-        "domain of this function or one of its derivatives. "
-        "Move the slider to a valid time."
+        f"The selected time t = {time:.2f} "
+        "is outside the real-valued domain of "
+        "this function or one of its derivatives."
     )
 
     st.stop()
 
 
 # =========================================================
-# MOTION INTERPRETATION
+# MOTION STATE
 # =========================================================
 
 tolerance = 0.05
 
 if velocity > tolerance:
+
     motion = "Moving forward"
+
 elif velocity < -tolerance:
+
     motion = "Moving backward"
+
 else:
+
     motion = "Momentarily stopped"
 
 
 # =========================================================
-# INSTANTANEOUS MOTION
+# 3. INSTANTANEOUS MOTION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">3. Instantaneous Motion</div>',
+    '<div class="section-heading">'
+    "3. Instantaneous Motion"
+    "</div>",
     unsafe_allow_html=True,
 )
 
-col1, col2, col3, col4 = st.columns(4)
+metric1, metric2, metric3, metric4 = st.columns(4)
 
-with col1:
+with metric1:
+
     st.metric(
         "Position",
         f"{position:.2f} m",
     )
 
-with col2:
+with metric2:
+
     st.metric(
         "Velocity",
         f"{velocity:.2f} m/s",
     )
 
-with col3:
+with metric3:
+
     st.metric(
         "Acceleration",
         f"{acceleration:.2f} m/s²",
     )
 
-with col4:
+with metric4:
+
     st.metric(
         "Motion",
         motion,
@@ -517,20 +614,20 @@ with col4:
 graph_t = np.linspace(
     start_time,
     end_time,
-    800,
+    600,
 )
 
-position_values = evaluate_expression(
+position_values = evaluate_array(
     position_function,
     graph_t,
 )
 
-velocity_values = evaluate_expression(
+velocity_values = evaluate_array(
     velocity_function,
     graph_t,
 )
 
-acceleration_values = evaluate_expression(
+acceleration_values = evaluate_array(
     acceleration_function,
     graph_t,
 )
@@ -541,32 +638,58 @@ acceleration_values = evaluate_expression(
 # =========================================================
 
 tangent_values = (
-    velocity * (graph_t - time) + position
+    velocity * (graph_t - time)
+    + position
 )
 
 
 # =========================================================
-# MAIN POSITION GRAPH
+# 4. POSITION GRAPH
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">4. Position and Tangent Line</div>',
+    '<div class="section-heading">'
+    "4. Position and Tangent Line"
+    "</div>",
     unsafe_allow_html=True,
 )
 
-fig = go.Figure()
+st.caption(
+    "Drag the slider, or click a point on the position curve "
+    "to examine that moment."
+)
 
-fig.add_trace(
+
+position_fig = go.Figure()
+
+
+# Main curve
+
+position_fig.add_trace(
     go.Scatter(
         x=graph_t,
         y=position_values,
-        mode="lines",
-        name="Position s(t)",
-        line=dict(width=3),
+        mode="lines+markers",
+        name="Position",
+        line=dict(
+            width=3,
+        ),
+        marker=dict(
+            size=4,
+            opacity=0.0,
+        ),
+        customdata=graph_t,
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "s(t) = %{y:.2f}<extra></extra>"
+        ),
     )
 )
 
-fig.add_trace(
+
+# Tangent
+
+position_fig.add_trace(
     go.Scatter(
         x=graph_t,
         y=tangent_values,
@@ -576,62 +699,114 @@ fig.add_trace(
             width=2,
             dash="dash",
         ),
+        hoverinfo="skip",
     )
 )
 
-fig.add_trace(
+
+# Current point
+
+position_fig.add_trace(
     go.Scatter(
         x=[time],
         y=[position],
         mode="markers",
-        name="Current position",
-        marker=dict(size=12),
+        name="Selected time",
+        marker=dict(
+            size=12,
+        ),
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "s(t) = %{y:.2f}<extra></extra>"
+        ),
     )
 )
 
-fig.add_hline(
+
+position_fig.add_hline(
     y=0,
     line_width=1,
 )
 
-fig.add_vline(
+position_fig.add_vline(
     x=time,
     line_width=1,
     line_dash="dot",
 )
 
-fig.update_layout(
+
+position_fig.update_layout(
     height=520,
     margin=dict(
-        l=20,
-        r=20,
-        t=35,
+        l=15,
+        r=15,
+        t=30,
         b=20,
     ),
     xaxis_title="Time",
     yaxis_title="Position",
-    legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="left",
-        x=0,
-    ),
-    hovermode="x unified",
+    hovermode="closest",
+    showlegend=True,
 )
 
-st.plotly_chart(
-    fig,
-    use_container_width=True,
+
+position_event = st.plotly_chart(
+    position_fig,
+    width="stretch",
+    key="position_graph",
+    on_select="rerun",
+    selection_mode="points",
+    config={
+        "displaylogo": False,
+        "scrollZoom": False,
+    },
 )
 
 
 # =========================================================
-# TANGENT EXPLANATION
+# PROCESS GRAPH SELECTION
+# =========================================================
+
+try:
+
+    selected_points = (
+        position_event.selection.points
+    )
+
+    if selected_points:
+
+        selected_x = selected_points[-1]["x"]
+
+        selected_x = float(selected_x)
+
+        if (
+            start_time
+            <= selected_x
+            <= end_time
+        ):
+
+            if abs(
+                selected_x - st.session_state.selected_time
+            ) > 0.001:
+
+                st.session_state.selected_time = (
+                    selected_x
+                )
+
+                st.rerun()
+
+except Exception:
+    pass
+
+
+# =========================================================
+# 5. TANGENT EXPLANATION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">5. What Does the Tangent Line Mean?</div>',
+    '<div class="section-heading">'
+    "5. What Does the Tangent Line Mean?"
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -647,25 +822,23 @@ st.write(
 
 st.markdown(
     '<div class="explanation">'
-    "The slope of the tangent line represents the object's "
+    "The slope of the tangent line represents the "
     "<strong>instantaneous velocity</strong>. "
-    "In calculus, this slope is the derivative of the position function."
+    "In calculus, this slope is the derivative of the "
+    "position function."
     "</div>",
     unsafe_allow_html=True,
 )
 
 
 # =========================================================
-# VELOCITY
+# 6. VELOCITY AS DERIVATIVE
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">6. Velocity as the Derivative</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="equation-box">',
+    '<div class="section-heading">'
+    "6. Velocity as the Derivative"
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -673,13 +846,9 @@ st.latex(
     rf"v(t) = s'(t) = {sp.latex(velocity_function)}"
 )
 
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True,
-)
-
 st.write(
-    "Velocity tells us how quickly the object's position is changing."
+    "Velocity tells us how quickly the object's "
+    "position is changing."
 )
 
 st.latex(
@@ -688,11 +857,11 @@ st.latex(
 
 
 # =========================================================
-# VELOCITY GRAPH
+# 7. VELOCITY GRAPH
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">7. Velocity</div>',
+    '<div class="section-heading">7. Velocity</div>',
     unsafe_allow_html=True,
 )
 
@@ -703,8 +872,14 @@ velocity_fig.add_trace(
         x=graph_t,
         y=velocity_values,
         mode="lines",
-        name="Velocity v(t)",
-        line=dict(width=3),
+        name="Velocity",
+        line=dict(
+            width=3,
+        ),
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "v(t) = %{y:.2f}<extra></extra>"
+        ),
     )
 )
 
@@ -714,7 +889,13 @@ velocity_fig.add_trace(
         y=[velocity],
         mode="markers",
         name="Selected time",
-        marker=dict(size=11),
+        marker=dict(
+            size=11,
+        ),
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "v(t) = %{y:.2f}<extra></extra>"
+        ),
     )
 )
 
@@ -730,45 +911,41 @@ velocity_fig.add_vline(
 )
 
 velocity_fig.update_layout(
-    height=400,
+    height=380,
     margin=dict(
-        l=20,
-        r=20,
+        l=15,
+        r=15,
         t=25,
         b=20,
     ),
     xaxis_title="Time",
     yaxis_title="Velocity",
-    hovermode="x unified",
+    hovermode="closest",
 )
 
 st.plotly_chart(
     velocity_fig,
-    use_container_width=True,
+    width="stretch",
+    key="velocity_graph",
+    config={
+        "displaylogo": False,
+        "scrollZoom": False,
+    },
 )
 
 
 # =========================================================
-# ACCELERATION
+# 8. ACCELERATION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">8. Acceleration</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="equation-box">',
+    '<div class="section-heading">8. Acceleration</div>',
     unsafe_allow_html=True,
 )
 
 st.latex(
-    rf"a(t) = v'(t) = s''(t) = {sp.latex(acceleration_function)}"
-)
-
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True,
+    rf"a(t) = v'(t) = s''(t) = "
+    rf"{sp.latex(acceleration_function)}"
 )
 
 st.write(
@@ -776,16 +953,17 @@ st.write(
 )
 
 st.latex(
-    rf"a({time:.2f}) = {acceleration:.2f}\ \mathrm{{m/s^2}}"
+    rf"a({time:.2f}) = "
+    rf"{acceleration:.2f}\ \mathrm{{m/s^2}}"
 )
 
 
 # =========================================================
-# ACCELERATION GRAPH
+# 9. ACCELERATION GRAPH
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">9. Acceleration</div>',
+    '<div class="section-heading">9. Acceleration</div>',
     unsafe_allow_html=True,
 )
 
@@ -796,8 +974,14 @@ acceleration_fig.add_trace(
         x=graph_t,
         y=acceleration_values,
         mode="lines",
-        name="Acceleration a(t)",
-        line=dict(width=3),
+        name="Acceleration",
+        line=dict(
+            width=3,
+        ),
+        hovertemplate=(
+            "t = %{x:.2f}<br>"
+            "a(t) = %{y:.2f}<extra></extra>"
+        ),
     )
 )
 
@@ -807,7 +991,9 @@ acceleration_fig.add_trace(
         y=[acceleration],
         mode="markers",
         name="Selected time",
-        marker=dict(size=11),
+        marker=dict(
+            size=11,
+        ),
     )
 )
 
@@ -823,30 +1009,37 @@ acceleration_fig.add_vline(
 )
 
 acceleration_fig.update_layout(
-    height=400,
+    height=380,
     margin=dict(
-        l=20,
-        r=20,
+        l=15,
+        r=15,
         t=25,
         b=20,
     ),
     xaxis_title="Time",
     yaxis_title="Acceleration",
-    hovermode="x unified",
+    hovermode="closest",
 )
 
 st.plotly_chart(
     acceleration_fig,
-    use_container_width=True,
+    width="stretch",
+    key="acceleration_graph",
+    config={
+        "displaylogo": False,
+        "scrollZoom": False,
+    },
 )
 
 
 # =========================================================
-# CALCULUS CONNECTION
+# 10. CALCULUS CONNECTION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">10. The Calculus Connection</div>',
+    '<div class="section-heading">'
+    "10. The Calculus Connection"
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -855,54 +1048,74 @@ st.write(
     "position, velocity, and acceleration."
 )
 
-connection_col1, connection_col2, connection_col3 = st.columns(3)
+connection1, connection2, connection3 = st.columns(3)
 
-with connection_col1:
-    st.markdown("### Position")
+with connection1:
+
+    st.markdown("**Position**")
+
     st.latex(
         rf"s(t) = {sp.latex(position_function)}"
     )
+
     st.write(
         "Describes where the object is."
     )
 
-with connection_col2:
-    st.markdown("### Velocity")
+with connection2:
+
+    st.markdown("**Velocity**")
+
     st.latex(
-        rf"v(t) = s'(t) = {sp.latex(velocity_function)}"
+        rf"v(t) = s'(t)"
     )
+
     st.write(
         "Describes how quickly position is changing."
     )
 
-with connection_col3:
-    st.markdown("### Acceleration")
+with connection3:
+
+    st.markdown("**Acceleration**")
+
     st.latex(
-        rf"a(t) = v'(t) = s''(t) = {sp.latex(acceleration_function)}"
+        rf"a(t) = v'(t) = s''(t)"
     )
+
     st.write(
         "Describes how quickly velocity is changing."
     )
 
 
 # =========================================================
-# TURNING POINTS
+# 11. TURNING POINTS
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">11. Explore Turning Points</div>',
+    '<div class="section-heading">'
+    "11. Explore Turning Points"
+    "</div>",
     unsafe_allow_html=True,
 )
 
 st.write(
-    "A turning point can occur when instantaneous velocity is zero. "
-    "For a differentiable position function, this means "
-    "s′(t) = 0."
+    "A turning point can occur when instantaneous velocity "
+    "is zero. For a differentiable position function, "
+    "this means"
 )
 
+st.latex(
+    r"s'(t)=0"
+)
+
+
 try:
+
     critical_points = sp.solve(
-        sp.Eq(velocity_function, 0),
+        sp.Eq(
+            velocity_function,
+            0,
+        ),
         t,
     )
 
@@ -914,52 +1127,63 @@ try:
             continue
 
         try:
-            point_value = float(point)
 
-            if (
-                start_time <= point_value <= end_time
-                and np.isfinite(point_value)
+            point_time = float(point)
+
+            if not (
+                start_time
+                <= point_time
+                <= end_time
             ):
-                point_position = evaluate_at(
-                    position_function,
-                    point_value,
+                continue
+
+            point_position = evaluate_at(
+                position_function,
+                point_time,
+            )
+
+            if point_position is not None:
+
+                valid_points.append(
+                    (
+                        point_time,
+                        point_position,
+                    )
                 )
 
-                if point_position is not None:
-                    valid_points.append(
-                        (
-                            point_value,
-                            point_position,
-                        )
-                    )
-
-        except (TypeError, ValueError):
+        except Exception:
             continue
 
     if valid_points:
 
-        for point_time, point_position in valid_points:
+        for (
+            point_time,
+            point_position,
+        ) in valid_points:
 
             st.write(
-                f"A critical point occurs at approximately "
+                f"A critical point occurs at "
                 f"**t = {point_time:.2f} seconds**."
             )
 
-            turn_col1, turn_col2, turn_col3 = st.columns(3)
+            c1, c2, c3 = st.columns(3)
 
-            with turn_col1:
+            with c1:
+
                 st.metric(
                     "Time",
                     f"{point_time:.2f} s",
                 )
 
-            with turn_col2:
+            with c2:
+
                 st.metric(
                     "Position",
                     f"{point_position:.2f} m",
                 )
 
-            with turn_col3:
+            with c3:
+
                 st.metric(
                     "Velocity",
                     "0.00 m/s",
@@ -968,49 +1192,55 @@ try:
     else:
 
         st.info(
-            "No turning points where v(t) = 0 were found in "
-            "the selected time interval."
+            "No critical points where v(t) = 0 "
+            "were found in this interval."
         )
 
 except Exception:
 
     st.info(
-        "Turning points could not be determined symbolically "
-        "for this function."
+        "Critical points could not be determined "
+        "symbolically for this function."
     )
 
 
 # =========================================================
-# INTERPRET THE MOTION
+# 12. INTERPRET THE MOTION
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">12. Interpret the Motion</div>',
+    '<div class="section-heading">'
+    "12. Interpret the Motion"
+    "</div>",
     unsafe_allow_html=True,
 )
 
 if velocity > tolerance:
 
     interpretation = (
-        f"At **t = {time:.2f} s**, velocity is positive, so the "
-        "object's position is increasing. It is moving forward."
+        f"At **t = {time:.2f} s**, velocity is positive, "
+        "so the object's position is increasing. "
+        "It is moving forward."
     )
 
 elif velocity < -tolerance:
 
     interpretation = (
-        f"At **t = {time:.2f} s**, velocity is negative, so the "
-        "object's position is decreasing. It is moving backward."
+        f"At **t = {time:.2f} s**, velocity is negative, "
+        "so the object's position is decreasing. "
+        "It is moving backward."
     )
 
 else:
 
     interpretation = (
-        f"At **t = {time:.2f} s**, velocity is approximately zero. "
-        "The object is momentarily stopped."
+        f"At **t = {time:.2f} s**, velocity is approximately "
+        "zero. The object is momentarily stopped."
     )
 
-st.info(interpretation)
+st.write(
+    interpretation
+)
 
 
 # =========================================================
@@ -1018,15 +1248,19 @@ st.info(interpretation)
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">How It Works</div>',
+    '<div class="section-heading">'
+    "How It Works"
+    "</div>",
     unsafe_allow_html=True,
 )
 
-with st.expander("Step 1 — Define the position"):
+with st.expander(
+    "Step 1 — Define the position"
+):
 
     st.write(
-        "The program begins with a position function describing "
-        "the object's location over time."
+        "The program begins with a position function "
+        "describing the object's location over time."
     )
 
     st.latex(
@@ -1034,51 +1268,63 @@ with st.expander("Step 1 — Define the position"):
     )
 
 
-with st.expander("Step 2 — Differentiate"):
+with st.expander(
+    "Step 2 — Differentiate"
+):
 
     st.write(
-        "The application uses symbolic differentiation to obtain "
-        "the instantaneous velocity."
+        "The application uses symbolic differentiation "
+        "to obtain instantaneous velocity."
     )
 
     st.latex(
-        rf"v(t) = s'(t) = {sp.latex(velocity_function)}"
+        rf"v(t) = s'(t) = "
+        rf"{sp.latex(velocity_function)}"
     )
 
 
-with st.expander("Step 3 — Differentiate again"):
+with st.expander(
+    "Step 3 — Differentiate again"
+):
 
     st.write(
         "Differentiating velocity gives acceleration."
     )
 
     st.latex(
-        rf"a(t) = v'(t) = s''(t) = {sp.latex(acceleration_function)}"
+        rf"a(t) = v'(t) = s''(t) = "
+        rf"{sp.latex(acceleration_function)}"
     )
 
 
-with st.expander("Step 4 — Choose a time"):
+with st.expander(
+    "Step 4 — Choose a time"
+):
 
     st.write(
-        "The slider selects a specific moment. The application "
-        "evaluates the position, velocity, and acceleration at "
-        "that moment."
+        "The slider selects a specific moment. "
+        "You can also select a point directly on the "
+        "position graph."
     )
 
 
-with st.expander("Step 5 — Build the tangent line"):
+with st.expander(
+    "Step 5 — Build the tangent line"
+):
 
     st.write(
-        "The tangent line uses instantaneous velocity as its slope."
+        "The tangent line uses instantaneous velocity "
+        "as its slope."
     )
 
     st.latex(
-        r"y = v(t_0)(t-t_0)+s(t_0)"
+        r"y=v(t_0)(t-t_0)+s(t_0)"
     )
 
     st.write(
-        "This makes the geometric meaning of the derivative visible: "
-        "the derivative is the slope of the tangent line."
+        "This makes the geometric meaning of the derivative "
+        "visible: the derivative is the slope of the "
+        "tangent line."
     )
 
 
@@ -1087,19 +1333,23 @@ with st.expander("Step 5 — Build the tangent line"):
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">Why I Built This</div>',
+    '<div class="section-heading">'
+    "Why I Built This"
+    "</div>",
     unsafe_allow_html=True,
 )
 
 st.write(
-    "Many students can calculate derivatives without developing "
-    "an intuition for what a derivative actually represents."
+    "Many students can calculate derivatives without "
+    "developing an intuition for what a derivative "
+    "actually represents."
 )
 
 st.write(
-    "I built Motion Explorer to connect the algebraic derivative "
-    "to physical motion by showing position, tangent slope, "
-    "velocity, and acceleration together in an interactive visualization."
+    "I built Motion Explorer to connect the algebraic "
+    "derivative to physical motion by showing position, "
+    "tangent slope, velocity, and acceleration together "
+    "in an interactive visualization."
 )
 
 
@@ -1109,7 +1359,8 @@ st.write(
 
 st.markdown(
     '<div class="footer">'
-    "Motion Explorer · Built with Python, Streamlit, NumPy, Plotly, and SymPy"
+    "Motion Explorer · Built with Python, Streamlit, "
+    "NumPy, Plotly, and SymPy"
     "</div>",
     unsafe_allow_html=True,
 )
