@@ -31,12 +31,15 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* ---------- Global ---------- */
+
+    /* ========================================================
+       GLOBAL
+       ======================================================== */
 
     .block-container {
-        max-width: 1180px;
-        padding-top: 2.5rem;
-        padding-bottom: 5rem;
+        max-width: 1120px;
+        padding-top: 2rem;
+        padding-bottom: 3.5rem;
     }
 
     html, body, [class*="css"] {
@@ -48,140 +51,309 @@ st.markdown(
             sans-serif;
     }
 
-    /* ---------- Header ---------- */
+    /* Reduce Streamlit's default vertical gaps */
+    div[data-testid="stVerticalBlock"] {
+        gap: 0.55rem;
+    }
+
+    /* ========================================================
+       HEADER
+       ======================================================== */
 
     .app-kicker {
-        font-size: 0.75rem;
-        font-weight: 650;
-        letter-spacing: 0.12em;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: #6b7280;
-        margin-bottom: 0.45rem;
+        color: #8b8f98;
+        margin: 0 0 0.35rem 0;
     }
 
     .app-title {
-        font-size: 2.65rem;
+        font-size: 2.35rem;
         line-height: 1.05;
-        font-weight: 720;
+        font-weight: 700;
         letter-spacing: -0.045em;
         margin: 0;
+        color: #17181b;
     }
 
     .app-description {
-        max-width: 760px;
-        margin-top: 0.8rem;
-        margin-bottom: 2rem;
-        color: #6b7280;
-        font-size: 1.02rem;
-        line-height: 1.65;
+        max-width: 700px;
+        margin-top: 0.55rem;
+        margin-bottom: 1.65rem;
+        color: #6b7078;
+        font-size: 0.94rem;
+        line-height: 1.55;
     }
 
-    /* ---------- Sections ---------- */
+    /* ========================================================
+       SECTION HIERARCHY
+       ======================================================== */
 
     .section-number {
-        color: #9ca3af;
-        font-size: 0.78rem;
-        font-weight: 650;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.2rem;
+        color: #a1a5ad;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        margin-top: 1.65rem;
+        margin-bottom: 0.12rem;
     }
 
     .section-title {
-        font-size: 1.35rem;
-        font-weight: 680;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.25rem;
+        font-size: 1.12rem;
+        font-weight: 650;
+        letter-spacing: -0.018em;
+        line-height: 1.25;
+        margin: 0;
+        color: #202226;
     }
 
     .section-description {
-        color: #6b7280;
-        font-size: 0.92rem;
-        margin-bottom: 1rem;
+        color: #747982;
+        font-size: 0.84rem;
+        line-height: 1.5;
+        margin-top: 0.22rem;
+        margin-bottom: 0.65rem;
     }
 
-    /* ---------- Function display ---------- */
+    /* First section sits closer to header */
+    .app-description + .section-number {
+        margin-top: 0.4rem;
+    }
+
+    /* ========================================================
+       INPUTS
+       ======================================================== */
+
+    div[data-testid="stTextInput"] {
+        margin-top: 0;
+    }
+
+    div[data-testid="stSelectbox"] {
+        margin-top: 0;
+    }
+
+    div[data-testid="stNumberInput"] {
+        margin-top: 0;
+    }
+
+    div[data-testid="stSlider"] {
+        padding-top: 0.15rem;
+        padding-bottom: 0.2rem;
+    }
+
+    label[data-testid="stWidgetLabel"] p {
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        color: #686d75 !important;
+    }
+
+    /* Cleaner input boxes */
+    div[data-baseweb="input"] {
+        border-radius: 7px;
+    }
+
+    div[data-baseweb="select"] {
+        border-radius: 7px;
+    }
+
+    /* ========================================================
+       FUNCTION
+       ======================================================== */
 
     .function-display {
-        font-size: 1.25rem;
-        padding: 0.8rem 0;
-        margin-bottom: 0.4rem;
-    }
-
-    /* ---------- Motion summary ---------- */
-
-    .summary-label {
-        font-size: 0.76rem;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: #6b7280;
+        font-size: 1.05rem;
+        padding: 0.45rem 0;
         margin-bottom: 0.15rem;
     }
 
-    .summary-value {
-        font-size: 1.42rem;
+    /* ========================================================
+       MOTION SUMMARY
+       ======================================================== */
+
+    .summary-label {
+        font-size: 0.65rem;
         font-weight: 650;
-        line-height: 1.25;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: #858a92;
+        margin-bottom: 0.18rem;
+    }
+
+    .summary-value {
+        font-size: 1.16rem;
+        font-weight: 650;
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        color: #202226;
     }
 
     .summary-unit {
-        font-size: 0.84rem;
+        font-size: 0.76rem;
         font-weight: 450;
-        color: #6b7280;
+        color: #858a92;
     }
 
-    /* ---------- Explanation ---------- */
-
-    .concept-note {
-        border-left: 2px solid #9ca3af;
-        padding-left: 1rem;
-        margin: 1rem 0;
-        color: #4b5563;
-        line-height: 1.65;
-    }
-
-    /* ---------- Small labels ---------- */
+    /* ========================================================
+       TEXT
+       ======================================================== */
 
     .muted {
-        color: #6b7280;
-        font-size: 0.88rem;
-    }
-
-    /* ---------- Footer ---------- */
-
-    .footer {
-        margin-top: 4rem;
-        padding-top: 1rem;
-        border-top: 1px solid #e5e7eb;
-        color: #9ca3af;
+        color: #7a7f87;
         font-size: 0.78rem;
-        display: flex;
-        justify-content: space-between;
+        line-height: 1.45;
     }
 
-    /* ---------- Streamlit cleanup ---------- */
+    .concept-note {
+        border-left: 2px solid #c7cbd1;
+        padding: 0.15rem 0 0.15rem 0.8rem;
+        margin: 0.55rem 0 0.8rem 0;
+        color: #555a62;
+        font-size: 0.86rem;
+        line-height: 1.55;
+    }
+
+    /* ========================================================
+       METRICS
+       ======================================================== */
 
     div[data-testid="stMetric"] {
-        padding: 0;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid #e7e8eb;
+        border-radius: 7px;
+        background: rgba(250, 250, 251, 0.65);
     }
 
     div[data-testid="stMetricLabel"] {
-        white-space: normal !important;
+        font-size: 0.68rem !important;
+        color: #7b8088 !important;
     }
 
     div[data-testid="stMetricValue"] {
-        white-space: normal !important;
-        overflow: visible !important;
+        font-size: 1.05rem !important;
+        font-weight: 650 !important;
+        color: #24262a !important;
     }
+
+    /* ========================================================
+       PLOTLY
+       ======================================================== */
+
+    div[data-testid="stPlotlyChart"] {
+        margin-top: 0.1rem;
+        margin-bottom: 0.35rem;
+    }
+
+    /* ========================================================
+       COLUMNS
+       ======================================================== */
+
+    div[data-testid="column"] {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    /* ========================================================
+       EXPANDERS
+       ======================================================== */
+
+    div[data-testid="stExpander"] {
+        border: 1px solid #e6e7e9;
+        border-radius: 8px;
+        margin-top: 1.1rem;
+    }
+
+    div[data-testid="stExpander"] summary {
+        font-size: 0.84rem;
+        font-weight: 600;
+    }
+
+    /* ========================================================
+       ALERTS
+       ======================================================== */
+
+    div[data-testid="stAlert"] {
+        border-radius: 7px;
+        font-size: 0.84rem;
+    }
+
+    /* ========================================================
+       LATEX
+       ======================================================== */
+
+    .stLatex {
+        margin-top: 0.15rem;
+        margin-bottom: 0.15rem;
+    }
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
 
     button[kind="secondary"] {
         border-radius: 6px;
+    }
+
+    /* ========================================================
+       FOOTER
+       ======================================================== */
+
+    .footer {
+        margin-top: 3rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid #e7e8eb;
+        color: #9a9ea5;
+        font-size: 0.68rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
+
+    @media (max-width: 700px) {
+
+        .block-container {
+            padding-top: 1.25rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .app-title {
+            font-size: 2rem;
+        }
+
+        .app-description {
+            font-size: 0.88rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .section-number {
+            margin-top: 1.35rem;
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+        }
+
+        .summary-value {
+            font-size: 1rem;
+        }
+
+        .footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
     }
 
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # SYMBOLIC SETUP
