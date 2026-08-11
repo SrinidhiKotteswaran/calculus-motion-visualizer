@@ -3,6 +3,20 @@ An interactive Python-based calculus visualization tool connecting derivatives, 
 
 # Motion Explorer: Interactive Calculus Visualization Tool
 
+## Project Evolution
+
+This repository represents the original prototype of Motion Explorer.
+
+I initially built the project in Python using Streamlit, NumPy, Plotly, and SymPy to explore how calculus concepts such as derivatives, tangent lines, and velocity could be represented interactively.
+
+After experimenting with the prototype, I developed a substantially expanded version using React and TypeScript. The newer version evolved from a single motion visualization into a broader calculus laboratory with numerical differentiation, secant-to-tangent visualization, critical-point analysis, concavity, Riemann sums, and interactive calculus challenges.
+
+**Original prototype:** Python + Streamlit
+**Current version:** React + TypeScript
+
+→ **[View the current Motion Explorer](https://calculus-motion-explorer-axfuj2ixr-srinidhi-kotteswaran.vercel.app/)**
+
+
 ## Overview
 
 Motion Explorer is an interactive educational web application designed to help students understand the connection between calculus and physics.
