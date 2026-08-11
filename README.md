@@ -49,9 +49,4 @@ I designed Motion Explorer to provide a visual connection between:
 
 The application was built iteratively, beginning with a basic tangent-line visualization and expanding toward interactive learning features.
 
-## Future Improvements
-
-- User-selected equations
-- Velocity and acceleration visualizations
-- Integral accumulation visualization
-- Classroom feedback/testing
+#
