@@ -35,8 +35,8 @@ st.markdown(
 
     .block-container {
         max-width: 1180px;
-        padding-top: 2.5rem;
-        padding-bottom: 5rem;
+        padding-top: 3.5rem;
+        padding-bottom: 7rem;
     }
 
     html, body, [class*="css"] {
@@ -56,7 +56,7 @@ st.markdown(
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: #6b7280;
-        margin-bottom: 0.45rem;
+        margin-bottom: 0.7rem;
     }
 
     .app-title {
@@ -69,8 +69,8 @@ st.markdown(
 
     .app-description {
         max-width: 760px;
-        margin-top: 0.8rem;
-        margin-bottom: 2rem;
+        margin-top: 1.3rem;
+        margin-bottom: 3.5rem;
         color: #6b7280;
         font-size: 1.02rem;
         line-height: 1.65;
@@ -83,28 +83,29 @@ st.markdown(
         font-size: 0.78rem;
         font-weight: 650;
         letter-spacing: 0.08em;
-        margin-bottom: 0.2rem;
+        margin-top: 3.75rem;
+        margin-bottom: 0.4rem;
     }
 
     .section-title {
         font-size: 1.35rem;
         font-weight: 680;
         letter-spacing: -0.02em;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.6rem;
     }
 
     .section-description {
         color: #6b7280;
         font-size: 0.92rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.8rem;
     }
 
     /* ---------- Function display ---------- */
 
     .function-display {
         font-size: 1.25rem;
-        padding: 0.8rem 0;
-        margin-bottom: 0.4rem;
+        padding: 1.2rem 0;
+        margin-bottom: 0.8rem;
     }
 
     /* ---------- Motion summary ---------- */
@@ -114,13 +115,14 @@ st.markdown(
         text-transform: uppercase;
         letter-spacing: 0.07em;
         color: #6b7280;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.4rem;
     }
 
     .summary-value {
         font-size: 1.42rem;
         font-weight: 650;
         line-height: 1.25;
+        margin-bottom: 0.5rem;
     }
 
     .summary-unit {
@@ -133,8 +135,8 @@ st.markdown(
 
     .concept-note {
         border-left: 2px solid #9ca3af;
-        padding-left: 1rem;
-        margin: 1rem 0;
+        padding-left: 1.2rem;
+        margin: 2rem 0;
         color: #4b5563;
         line-height: 1.65;
     }
@@ -149,8 +151,8 @@ st.markdown(
     /* ---------- Footer ---------- */
 
     .footer {
-        margin-top: 4rem;
-        padding-top: 1rem;
+        margin-top: 6rem;
+        padding-top: 1.5rem;
         border-top: 1px solid #e5e7eb;
         color: #9ca3af;
         font-size: 0.78rem;
@@ -161,7 +163,7 @@ st.markdown(
     /* ---------- Streamlit cleanup ---------- */
 
     div[data-testid="stMetric"] {
-        padding: 0;
+        padding: 0.4rem 0;
     }
 
     div[data-testid="stMetricLabel"] {
@@ -175,6 +177,36 @@ st.markdown(
 
     button[kind="secondary"] {
         border-radius: 6px;
+    }
+
+    /* ---------- Extra breathing room ---------- */
+
+    div[data-testid="stElementContainer"] {
+        margin-bottom: 0.35rem;
+    }
+
+    div[data-testid="stHorizontalBlock"] {
+        margin-top: 0.5rem;
+        margin-bottom: 1.4rem;
+        gap: 1.5rem;
+    }
+
+    div[data-testid="stPlotlyChart"] {
+        margin-top: 1rem;
+        margin-bottom: 2.2rem;
+    }
+
+    div[data-testid="stExpander"] {
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .katex-display {
+        margin: 1.4rem 0 !important;
+    }
+
+    hr {
+        margin: 2.5rem 0;
     }
 
     </style>
