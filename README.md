@@ -1,66 +1,43 @@
-# calculus-motion-visualizer
-An interactive Python-based calculus visualization tool connecting derivatives, velocity, and physical motion through dynamic simulations.
+# Calculus Motion Visualizer
 
-# Motion Explorer: Interactive Calculus Visualization Tool
+An original Python prototype for exploring the connection between derivatives, velocity, and physical motion through interactive simulations.
 
-## Project Evolution
+> **Project history:** This repository is the original prototype that led to [Motion Explorer](https://github.com/SrinidhiKotteswaran/calculus-motion-explorer), the substantially expanded React/TypeScript version.
 
-This repository represents the original prototype of Motion Explorer.
+**[View the current Motion Explorer →](https://calculus-motion-explorer-axfuj2ixr-srinidhi-kotteswaran.vercel.app/)**
 
-I initially built the project in Python using Streamlit, NumPy, Plotly, and SymPy to explore how calculus concepts such as derivatives, tangent lines, and velocity could be represented interactively.
+## Why I built it
 
-After experimenting with the prototype, I developed a substantially expanded version using React and TypeScript. The newer version evolved from a single motion visualization into a broader calculus laboratory with numerical differentiation, secant-to-tangent visualization, critical-point analysis, concavity, Riemann sums, and interactive calculus challenges.
-
-**Original prototype:** Python + Streamlit
-**Current version:** React + TypeScript
-
-→ **[View the current Motion Explorer](https://calculus-motion-explorer-axfuj2ixr-srinidhi-kotteswaran.vercel.app/)**
-
-
-## Overview
-
-Motion Explorer is an interactive educational web application designed to help students understand the connection between calculus and physics.
-
-Many students memorize derivative rules without developing intuition for what derivatives represent. This project visualizes how position functions, tangent lines, and instantaneous velocity are connected.
+I wanted to explore calculus visually rather than treating derivatives as rules to apply on paper. I started with a small motion experiment and used it to investigate how position, velocity, tangent lines, and instantaneous rates of change relate to one another.
 
 ## Features
 
 - Interactive time slider
 - Dynamic position-time graphs
-- Real-time tangent line visualization
+- Tangent-line visualization
 - Instantaneous velocity calculation
 - Physics-based motion examples
+
+## How it works
+
+A position function describes an object's location over time. The slope of the tangent line at a particular time represents the object's instantaneous velocity.
+
+The application lets the user move through time and observe those relationships directly:
+
+**Position → slope → velocity → motion**
 
 ## Technologies
 
 - Python
 - Streamlit
-- Plotly
+- SymPy
 - NumPy
+- Plotly
 
-## How It Works
+## Project evolution
 
-Motion Explorer demonstrates the relationship between position, velocity, and derivatives.
+This prototype began as an experiment with symbolic and numerical calculus in Python. It helped me identify what I wanted from a larger interactive tool: more control over the visualization, more computational experiments, and a broader set of calculus concepts.
 
-1. A position function describes an object's location over time.
-2. The tangent line shows the slope at a specific moment.
-3. The slope represents instantaneous velocity.
+I later rebuilt the project in React and TypeScript as Motion Explorer, adding numerical differentiation, floating-point error analysis, symbolic differentiation through a custom AST-based math engine, critical-point analysis, concavity, numerical integration, and interactive challenges.
 
-By interacting with the graph, students can visually explore how calculus describes motion.
-
-## Educational Goal
-
-This project aims to bridge the gap between abstract calculus concepts and physical intuition by showing how derivatives describe real-world motion.
-
-## Development Process
-
-This project began from observing that many students can compute derivatives but struggle to understand their physical meaning.
-
-I designed Motion Explorer to provide a visual connection between:
-- Position → Velocity
-- Slope → Instantaneous Rate of Change
-- Calculus → Physics
-
-The application was built iteratively, beginning with a basic tangent-line visualization and expanding toward interactive learning features.
-
-#
+Keeping the prototype public makes that progression visible rather than hiding the earlier version.
