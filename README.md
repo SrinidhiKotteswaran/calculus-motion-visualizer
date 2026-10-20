@@ -4,7 +4,7 @@ The **original Python prototype of Motion Explorer**: an interactive Streamlit a
 
 This repository preserves the earlier implementation. The expanded React/TypeScript version lives in a separate repository.
 
-- **Current application:** [Motion Explorer live demo](https://calculus-motion-explorer-axfuj2ixr-srinidhi-kotteswaran.vercel.app/)
+- **Current application:** [Motion Explorer live demo](https://calculus-motion-explorer.vercel.app/)
 - **Current source:** [calculus-motion-explorer](https://github.com/SrinidhiKotteswaran/calculus-motion-explorer)
 
 ## What the prototype explores
